@@ -6,9 +6,9 @@
 
 - 当前课时：`01`（CLI 启动与交互入口）
 - 状态：`进行中`（可选：未开始 / 进行中 / 阻塞 / 已完成）
-- 当前项：`01.1 — 追踪 cli-runtime.js 的构建来源与 main 的职责`
-- 下一步：`回答“为何将缓存启动器与 CLI runtime 分离”的推理题；当前项保持进行中。`
-- 上次确认的源码：`packages/coding-agent/package.json:30–33、scripts/build-coding-agent-bundle.mjs:1–187；已安装 dist/bundle/cli.js:1–5、cli-runtime.js:1`
+- 当前项：`01.1 — 从已安装的 pi 启动器按执行顺序逐行阅读至 main`
+- 下一步：`继续读取已安装 dist/bundle/cli-runtime.js:1，解释其静态导入为何在 main 前执行。`
+- 上次确认的源码：`已安装 ~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`
 - 阻塞原因：`无`
 
 ## 课时完成情况
@@ -29,7 +29,7 @@
 
 将当前课时中已经完成的项复制到这里并勾选；不要提前复制后续课时。
 
-- [ ] 01.1 追踪 `cli-runtime.js` 的构建来源与 `main` 的职责。
+- [ ] 01.1 从已安装的 `pi` 启动器按执行顺序逐行阅读至 `main`。
 
 ## 已验证事实
 
@@ -46,15 +46,14 @@
 - `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`：已安装的 `pi` 启动器启用 Node 编译缓存后加载同目录的 `cli-runtime.js`。
 - `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:1`：运行时包从 `chunk-CMRUVXTE.js` 导入 `main`，执行 `setupCli()`，再以 `process.argv.slice(2)` 调用 `main`。
 - `packages/coding-agent/package.json:30–33`：本仓库构建先以 `tsgo` 生成未打包 JavaScript，再执行 `scripts/build-coding-agent-bundle.mjs`。
-- `scripts/build-coding-agent-bundle.mjs:132–163`：当前仓库以 `dist/cli.js` 为 esbuild 入口，开启 bundle、ESM splitting，并输出 `dist/bundle/cli.js` 与 chunks。
-- 当前仓库版本为 `0.85.1`，已安装包版本为 `0.86.1`；当前构建脚本中没有 `cli-runtime.js`，故不能用本检出版本证明该启动器的精确生成步骤。
+- `scripts/build-coding-agent-bundle.mjs`：esbuild 以 `dist/cli.js` 为 `cli-runtime` 入口，开启 bundle、ESM splitting；随后脚本写入只启用编译缓存并加载 `cli-runtime.js` 的 `dist/bundle/cli.js` 启动器。
+- 当前仓库与已安装包均为 `0.86.1`；构建脚本写入的启动器内容与已安装 `dist/bundle/cli.js` 一致，已验证 `cli-runtime.js` 的精确生成路径。
 - 00.3：Web 应用应复用 `pi-agent-core` 与 `pi-ai`，并以自身 UI 替代 CLI 产品层和 TUI；`chord` 按服务组合需求选择。
 - 00.4：Agent 以消息、工具和事件作为 UI 无关的边界，因此替换终端 UI 不需要重写模型 Provider 或工具循环。
 
 ## 待验证问题
 
 - 第 01 课：`packages/coding-agent/src/main.ts` 在一次 CLI 启动中承担哪些产品层决策？
-- 已安装 `0.86.1` 包中 `cli-runtime.js` 的精确生成提交或脚本是什么？需要对应版本的源码或发布构建记录验证。
 
 ## 会话日志
 
@@ -74,3 +73,7 @@
 | 当前会话 | 01 | 01.1 改从 cli.ts 入口学习：确认 shebang、setupCli 与 main 的直接调用，等待参数传递推理 | 01.1 |
 | 当前会话 | 01 | 01.1 确认已安装启动器经 cli-runtime.js 导入并调用打包后的 main | 01.1 |
 | 当前会话 | 01 | 01.1 确认当前仓库构建为 tsgo 后交给 esbuild；发现仓库 0.85.1 与已安装包 0.86.1 不匹配 | 01.1 |
+| 当前会话 | 01 | 更新后重验完成：仓库和已安装包均为 0.86.1，构建脚本已明确生成 cli-runtime.js 与缓存启动器 | 01.1 |
+| 当前会话 | 01 | 01.1 改用三层状态表讲解，避免混淆终端、进程、会话和运行时目录 | 01.1 |
+| 当前会话 | 01 | 01.1 开始按执行顺序逐行阅读：完成已安装 cli.js:1–5，下一项为 cli-runtime.js:1 | 01.1 |
+| 当前会话 | 01 | 暂停：当前项进行中；最后读到已安装 cli.js:1–5，下一项 cli-runtime.js:1，沿实际执行顺序逐行学习 | 01.1 |

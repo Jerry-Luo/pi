@@ -84,3 +84,19 @@
 ### 00.4 设计原因
 - 问题：同一 Agent 能力必须适配终端和浏览器等不同交互环境。
 - 当前方案：将模型与工具循环置于 Agent 层，把 UI 特定逻辑保留在产品层。
+
+---
+
+## 课时 01：CLI 启动与交互入口
+
+### 阅读方式
+- 从用户实际执行的入口开始，沿控制流顺序逐行阅读。
+- 每次只解释 5–20 行：每个非空行、陌生的 TypeScript/JavaScript 语法、变量当前值及其下一步去向。
+- 遇到函数调用时，先说明输入、输出和调用原因；仅在当前控制流到达时进入函数体。
+- 保持“安装与构建”“程序启动”“会话运行”三条链路分开，避免跨层跳读。
+
+### 01.1 已读入口
+- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`：shebang 启动 Node；导入 Node 内置模块；启用编译缓存；随后基于当前模块路径加载 `cli-runtime.js`。
+
+### 01.1 下一项
+- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:1`：继续沿实际执行顺序逐行阅读。
