@@ -98,5 +98,16 @@
 ### 01.1 已读入口
 - `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`：shebang 启动 Node；导入 Node 内置模块；启用编译缓存；随后基于当前模块路径加载 `cli-runtime.js`。
 
-### 01.1 下一项
-- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:1`：继续沿实际执行顺序逐行阅读。
+### 01.1 本次定向阅读
+- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:1–3`：第 1 行是可执行脚本声明；第 2 行为 Node ESM 创建 `require`；第 3 行静态导入主 chunk 的 `APP_NAME`、`configureHttpDispatcher`、`main` 及七个副作用 chunk，随后定义并调用 `setupCli()`，最后调用 `main(process.argv.slice(2))`。
+- 静态 `import` 的依赖模块在本模块主体求值前求值；因此不能按第 3 行从左到右把它们当成普通函数调用。`setupCli()` 在 `main(...)` 之前，但不在依赖模块的求值之前。
+- 当前安装产物的主 chunk 名为 `chunk-4DKZACXI.js`；旧状态记录的 `chunk-CMRUVXTE.js` 不是当前文件内容。chunk 名字不应被视为稳定调用边界。
+- 只要仓库与安装版本不一致，就应立即提醒学习者将两者更新到完全一致。当前仓库为 `0.87.1`，已安装包为 `0.87.0`；对齐前以仓库源码学习，但暂停用安装产物验证仓库行为。
+- 后续讲解必须直接给出正在学习的文件路径、最小完整源码和行号，并逐行说明语法、当前值、执行效果及下一步去向，不能只给摘要让学习者自行寻找文件。
+- 因果、边界和调用链结论由导师直接说明，不再把关键结论作为推理题让学习者猜测。
+- `packages/coding-agent/src/cli.ts:1–6` 是 bundle 背后的源码入口：静态导入 `setupCli` 与 `main`，先执行进程级 CLI 初始化，再把 `process.argv.slice(2)` 交给 `main`。
+
+### 01.1 推理结论与下一项
+- 主 chunk 的模块顶层初始化先于 `setupCli()` 和 `main(...)`，因为 ESM 会先求值静态依赖，再求值当前模块主体。
+- `setupCli()` 必须先于 `main(...)`：`main` 的认证、包管理、配置解析和后续 Provider 路径都应在 CLI 进程标识、环境变量、warning 策略及初始 HTTP dispatcher 已建立的环境中运行。
+- 下一项：`packages/coding-agent/src/main.ts:main`。

@@ -6,10 +6,10 @@
 
 - 当前课时：`01`（CLI 启动与交互入口）
 - 状态：`进行中`（可选：未开始 / 进行中 / 阻塞 / 已完成）
-- 当前项：`01.1 — 从已安装的 pi 启动器按执行顺序逐行阅读至 main`
-- 下一步：`继续读取已安装 dist/bundle/cli-runtime.js:1，解释其静态导入为何在 main 前执行。`
-- 上次确认的源码：`已安装 ~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`
-- 阻塞原因：`无`
+- 当前项：`01.1 — 进入仓库 packages/coding-agent/src/main.ts:main`
+- 下一步：`从 main 的函数签名开始，按控制流读取第一段启动决策；直接讲解，不留推理题。`
+- 上次确认的源码：`packages/coding-agent/src/cli/setup.ts:1–13`
+- 阻塞原因：`仓库 0.87.1 与已安装 Pi 0.87.0 尚未对齐；源码学习可继续，安装产物验证暂停。`
 
 ## 课时完成情况
 
@@ -29,7 +29,7 @@
 
 将当前课时中已经完成的项复制到这里并勾选；不要提前复制后续课时。
 
-- [ ] 01.1 从已安装的 `pi` 启动器按执行顺序逐行阅读至 `main`。
+- [ ] 01.1 从真实 `pi` 启动器映射回仓库 `packages/coding-agent/src/cli.ts`，按执行顺序逐行阅读至 `main`。
 
 ## 已验证事实
 
@@ -43,11 +43,14 @@
 - 根 `package.json`：构建顺序在 `telemetry` 与 `agent` 之间包含 `ai`。
 - `packages/coding-agent/package.json`：发布包为 `@earendil-works/pi-coding-agent`，并以 `bin.pi → dist/bundle/cli.js` 提供 CLI。
 - `packages/coding-agent/package.json`：生产内部依赖包括 `chord`、`pi-agent-core`、`pi-ai` 与 `pi-tui`。
+- `packages/coding-agent/src/cli.ts:1–6`：仓库 CLI 源码入口先调用 `setupCli()`，再将 `process.argv.slice(2)` 传给异步 `main`。
+- `packages/coding-agent/src/cli/setup.ts:1–13`：`setupCli` 在进入 `main` 前设置进程标题、两个环境变量和 warning 策略，并初始化 HTTP dispatcher。
 - `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js:1–5`：已安装的 `pi` 启动器启用 Node 编译缓存后加载同目录的 `cli-runtime.js`。
-- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:1`：运行时包从 `chunk-CMRUVXTE.js` 导入 `main`，执行 `setupCli()`，再以 `process.argv.slice(2)` 调用 `main`。
+- `~/.nvm/versions/node/v26.7.0/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli-runtime.js:2–3`：当前安装产物从 `./chunks/chunk-4DKZACXI.js` 静态导入 `APP_NAME`、`configureHttpDispatcher`、`main`，另有七个副作用导入；模块依赖先于本模块代码求值，随后执行 `setupCli()` 和 `main(process.argv.slice(2))`。旧记录中的 `chunk-CMRUVXTE.js` 文件名已不适用于当前安装产物。
 - `packages/coding-agent/package.json:30–33`：本仓库构建先以 `tsgo` 生成未打包 JavaScript，再执行 `scripts/build-coding-agent-bundle.mjs`。
 - `scripts/build-coding-agent-bundle.mjs`：esbuild 以 `dist/cli.js` 为 `cli-runtime` 入口，开启 bundle、ESM splitting；随后脚本写入只启用编译缓存并加载 `cli-runtime.js` 的 `dist/bundle/cli.js` 启动器。
-- 当前仓库与已安装包均为 `0.86.1`；构建脚本写入的启动器内容与已安装 `dist/bundle/cli.js` 一致，已验证 `cli-runtime.js` 的精确生成路径。
+- 先前检查时当前仓库与已安装包均为 `0.86.1`，当时构建脚本写入的启动器内容与已安装 `dist/bundle/cli.js` 一致。
+- 用户更新源码后，`packages/coding-agent/package.json:3` 为 `0.87.1`，已安装 `@earendil-works/pi-coding-agent/package.json:3` 为 `0.87.0`；仓库源码更新且版本更新，后续以仓库 `0.87.1` 为学习主线，安装产物只作入口旁证。
 - 00.3：Web 应用应复用 `pi-agent-core` 与 `pi-ai`，并以自身 UI 替代 CLI 产品层和 TUI；`chord` 按服务组合需求选择。
 - 00.4：Agent 以消息、工具和事件作为 UI 无关的边界，因此替换终端 UI 不需要重写模型 Provider 或工具循环。
 
@@ -77,3 +80,7 @@
 | 当前会话 | 01 | 01.1 改用三层状态表讲解，避免混淆终端、进程、会话和运行时目录 | 01.1 |
 | 当前会话 | 01 | 01.1 开始按执行顺序逐行阅读：完成已安装 cli.js:1–5，下一项为 cli-runtime.js:1 | 01.1 |
 | 当前会话 | 01 | 暂停：当前项进行中；最后读到已安装 cli.js:1–5，下一项 cli-runtime.js:1，沿实际执行顺序逐行学习 | 01.1 |
+| 当前会话 | 01 | 读到已安装 cli-runtime.js:1–3；发现当前 chunk 名称与旧记录不同；等待静态导入、setupCli、main 的执行顺序推理 | 01.1 |
+| 当前会话 | 01 | 按反馈重讲 cli-runtime.js 全部三行；核对发现已安装包已升至 0.87.0，而仓库仍为 0.86.1 | 01.1 |
+| 当前会话 | 01 | 用户更新仓库至 0.87.1；学习主线从安装产物切回仓库 cli.ts，安装包 0.87.0 仅作入口旁证 | 01.1：cli.ts → setupCli |
+| 当前会话 | 01 | 完成仓库 setupCli；改为导师直接给出推理结论；版本未一致时必须提醒对齐 | 01.1：main |
