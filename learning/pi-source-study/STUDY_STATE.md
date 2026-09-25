@@ -7,8 +7,8 @@
 - 当前课时：`01`（CLI 启动与交互入口）
 - 状态：`进行中`（可选：未开始 / 进行中 / 阻塞 / 已完成）
 - 当前项：`01.1 — 进入仓库 packages/coding-agent/src/main.ts:main`
-- 下一步：`继续 main.ts:590–606 的 package/config 命令分流；直接给出源码并逐行讲解。`
-- 上次确认的源码：`packages/coding-agent/src/main.ts:566–588`
+- 下一步：`继续 main.ts:638–647 的 app mode、stdout 接管与 RPC 文件参数校验；直接给出源码并逐行讲解。`
+- 上次确认的源码：`packages/coding-agent/src/main.ts:619–636`
 - 阻塞原因：`无；仓库与已安装 Pi 均为 0.87.1。`
 
 ## 课时完成情况
@@ -53,6 +53,12 @@
 - 当前 `packages/coding-agent/package.json:3` 与已安装 `@earendil-works/pi-coding-agent/package.json:3` 均为 `0.87.1`；仓库源码与实际安装版本已对齐。
 - `packages/coding-agent/src/main.ts:566–577`：`main` 先重置可选启动计时、合并内建与传入扩展工厂、归一化离线标记；认证命令若被处理则直接返回，不进入常规启动。
 - `packages/coding-agent/src/main.ts:579–588`：非认证路径先做安装清理，再以不信任项目的设置管理器读取全局代理设置，应用环境代理并重新配置 HTTP dispatcher；此时尚未创建会话。
+- `packages/coding-agent/src/main.ts:590–601`：package handler 在通用参数解析前接管一次性命令；通常按 `process.exitCode ?? 0` 强制退出，唯独 Windows 上成功的 `pi update` 从 `main` 返回，让事件循环自然排空以规避 Node teardown 断言。
+- `packages/coding-agent/src/main.ts:603–605` 与 `packages/coding-agent/src/package-manager-cli.ts:791–803`：只有 package handler 未接管时才检查首参数为 `config` 的命令；config 一旦被处理，`main` 立即返回，不会创建常规会话。
+- `packages/coding-agent/src/package-manager-cli.ts:743–788,829–834`：package/config 命令接收合并后的 `extensionFactories`，因为其设置与项目信任解析可能需要扩展参与；这不等于创建 Agent Session。
+- `packages/coding-agent/src/main.ts:607–617`：只有未被 auth/package/config 接管的参数才进入通用 `parseArgs`；所有 diagnostics 会先按 error/warning 着色输出到 stderr，任一 error 使进程以 1 退出，仅有 warning 时继续并记录 `parseArgs` 启动计时。
+- `packages/coding-agent/src/main.ts:619–622`：`--version` 在通用参数解析成功后输出 `VERSION` 并以状态码 0 退出，不创建 Session 或 UI。
+- `packages/coding-agent/src/main.ts:624–636`：`--export` 将第一个位置消息参数作为可选输出路径传给 `exportFromFile`；失败时输出规范化错误并以 1 退出，成功时输出目标路径并以 0 退出。
 - 00.3：Web 应用应复用 `pi-agent-core` 与 `pi-ai`，并以自身 UI 替代 CLI 产品层和 TUI；`chord` 按服务组合需求选择。
 - 00.4：Agent 以消息、工具和事件作为 UI 无关的边界，因此替换终端 UI 不需要重写模型 Provider 或工具循环。
 
@@ -87,3 +93,7 @@
 | 当前会话 | 01 | 用户更新仓库至 0.87.1；学习主线从安装产物切回仓库 cli.ts，安装包 0.87.0 仅作入口旁证 | 01.1：cli.ts → setupCli |
 | 当前会话 | 01 | 完成仓库 setupCli；改为导师直接给出推理结论；版本未一致时必须提醒对齐 | 01.1：main |
 | 当前会话 | 01 | 仓库与安装版本均为 0.87.1；讲解 main.ts:566–588，下一步 package/config 命令分流 | 01.1：main.ts:590–606 |
+| 当前会话 | 01 | 完成 main.ts:590–606：确认 package/config 一次性命令在通用参数解析前短路 | 01.1：main.ts:607–617 |
+| 当前会话 | 01 | 明确教学方式：只按调用链逐步讲解，不主动提问；当前源码检查点不变 | 01.1：main.ts:607–617 |
+| 当前会话 | 01 | 完成 main.ts:607–617：通用参数解析会汇总输出 diagnostics，存在 error 时退出 | 01.1：main.ts:619–636 |
+| 当前会话 | 01 | 完成 main.ts:619–636：version/export 在会话创建前完成并退出 | 01.1：main.ts:638–647 |

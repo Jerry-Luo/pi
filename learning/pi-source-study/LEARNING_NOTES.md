@@ -104,7 +104,7 @@
 - 当前安装产物的主 chunk 名为 `chunk-4DKZACXI.js`；旧状态记录的 `chunk-CMRUVXTE.js` 不是当前文件内容。chunk 名字不应被视为稳定调用边界。
 - 只要仓库与安装版本不一致，就应立即提醒学习者将两者更新到完全一致。当前仓库为 `0.87.1`，已安装包为 `0.87.0`；对齐前以仓库源码学习，但暂停用安装产物验证仓库行为。
 - 后续讲解必须直接给出正在学习的文件路径、最小完整源码和行号，并逐行说明语法、当前值、执行效果及下一步去向，不能只给摘要让学习者自行寻找文件。
-- 因果、边界和调用链结论由导师直接说明，不再把关键结论作为推理题让学习者猜测。
+- 因果、边界和调用链结论由导师直接说明；只按调用链顺序逐步讲解，不向学习者提问或设置检查题，学习者有问题时主动提出。
 - `packages/coding-agent/src/cli.ts:1–6` 是 bundle 背后的源码入口：静态导入 `setupCli` 与 `main`，先执行进程级 CLI 初始化，再把 `process.argv.slice(2)` 交给 `main`。
 
 ### 01.1 推理结论与下一项
@@ -113,3 +113,25 @@
 - 当前仓库与已安装 Pi 的 `package.json:3` 均为 `0.87.1`，版本已对齐。
 - `packages/coding-agent/src/main.ts:566–588`：`main` 的入参来自 `cli.ts`；先处理可选计时、扩展工厂、离线环境标志，再用 `runAuthCommand` 对认证命令早返回。普通启动则进行安装清理，并用 `projectTrusted: false` 的设置管理器读取全局代理配置；`applyHttpProxySettings` 后重新调用 `configureHttpDispatcher`。在此阶段尚未解析常规参数或创建会话。
 - 下一段：`packages/coding-agent/src/main.ts:590–606`，继续看 package/config 命令是否短路。
+
+### 01.1 package/config 命令分流
+- `packages/coding-agent/src/main.ts:590–601`：`handlePackageCommand` 先接收原始 `args` 和合并后的 `extensionFactories`。未识别 package 命令时返回 `false`；识别后通常按 `process.exitCode ?? 0` 强制退出，避免扩展留下的活动句柄阻止一次性命令结束。
+- Windows 上成功的 `pi update` 是强制退出的窄例外：`main` 直接返回，让 Node 自然排空事件循环，规避 `fetch()` teardown 期间可能发生的 Node 断言。
+- `packages/coding-agent/src/main.ts:603–605`：只有 package handler 未接管时才调用 `handleConfigCommand`；config 一旦被处理，`main` 返回，因此不会进入通用 `parseArgs`、Session、Agent runtime 或 UI 创建。
+- `packages/coding-agent/src/package-manager-cli.ts:791–803,864–875`：两个 handler 都以布尔值表达“是否接管当前命令”；这使 `main` 只负责顶层分流，而具体命令保留自己的解析和执行边界。
+- `extensionFactories` 会参与 package/config 所需的设置、资源与项目信任解析，但此时仍未创建 Agent Session。
+- 下一段：`packages/coding-agent/src/main.ts:607–617`，继续看通用参数解析与 diagnostics 处理。
+
+### 01.1 通用参数解析与 diagnostics
+- `packages/coding-agent/src/main.ts:607`：只有未被 auth/package/config 命令接管的原始 `args` 才交给通用 `parseArgs`；参数结构的内部细节留到课程指定的 `cli/args.ts` 阅读项。
+- `packages/coding-agent/src/main.ts:608–616`：解析产生的 diagnostics 会全部遍历并输出到 stderr；error 使用红色，warning 使用黄色，前缀也由类型决定。
+- diagnostics 中只要存在任一 error，进程就以状态码 1 退出；仅有 warning 时不会中断，因此后续启动仍可继续。
+- `packages/coding-agent/src/main.ts:617`：成功通过诊断门禁后记录 `parseArgs` 计时点；存在 error 时不会执行到这里。
+- 下一段：`packages/coding-agent/src/main.ts:619–636`，继续看 version/export 一次性命令分流。
+
+### 01.1 version/export 一次性命令分流
+- `packages/coding-agent/src/main.ts:619–622`：`parsed.version` 为真时只输出构建版本并以状态码 0 退出；该路径不会创建 Session、Agent runtime 或 UI。
+- `packages/coding-agent/src/main.ts:624–628`：`parsed.export` 提供待导出的会话来源；第一个 `parsed.messages` 位置参数被解释为可选输出路径，然后异步调用 `exportFromFile`。
+- `packages/coding-agent/src/main.ts:629–635`：导出异常被收窄为可显示消息并以状态码 1 退出；导出成功则打印实际输出路径并以状态码 0 退出。
+- 当前课程场景是“交互终端、带初始 prompt、创建新会话”，因此 `parsed.version` 为假且 `parsed.export` 未定义，这两个分支都会跳过。
+- 下一段：`packages/coding-agent/src/main.ts:638–647`，继续看 app mode、stdout 接管与 RPC 文件参数校验。
