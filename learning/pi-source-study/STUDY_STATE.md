@@ -7,9 +7,9 @@
 - 当前课时：`01`（CLI 启动与交互入口）
 - 状态：`进行中`（可选：未开始 / 进行中 / 阻塞 / 已完成）
 - 当前项：`01.1 — 进入仓库 packages/coding-agent/src/main.ts:main`
-- 下一步：`从 main 的函数签名开始，按控制流读取第一段启动决策；直接讲解，不留推理题。`
-- 上次确认的源码：`packages/coding-agent/src/cli/setup.ts:1–13`
-- 阻塞原因：`仓库 0.87.1 与已安装 Pi 0.87.0 尚未对齐；源码学习可继续，安装产物验证暂停。`
+- 下一步：`继续 main.ts:590–606 的 package/config 命令分流；直接给出源码并逐行讲解。`
+- 上次确认的源码：`packages/coding-agent/src/main.ts:566–588`
+- 阻塞原因：`无；仓库与已安装 Pi 均为 0.87.1。`
 
 ## 课时完成情况
 
@@ -50,7 +50,9 @@
 - `packages/coding-agent/package.json:30–33`：本仓库构建先以 `tsgo` 生成未打包 JavaScript，再执行 `scripts/build-coding-agent-bundle.mjs`。
 - `scripts/build-coding-agent-bundle.mjs`：esbuild 以 `dist/cli.js` 为 `cli-runtime` 入口，开启 bundle、ESM splitting；随后脚本写入只启用编译缓存并加载 `cli-runtime.js` 的 `dist/bundle/cli.js` 启动器。
 - 先前检查时当前仓库与已安装包均为 `0.86.1`，当时构建脚本写入的启动器内容与已安装 `dist/bundle/cli.js` 一致。
-- 用户更新源码后，`packages/coding-agent/package.json:3` 为 `0.87.1`，已安装 `@earendil-works/pi-coding-agent/package.json:3` 为 `0.87.0`；仓库源码更新且版本更新，后续以仓库 `0.87.1` 为学习主线，安装产物只作入口旁证。
+- 当前 `packages/coding-agent/package.json:3` 与已安装 `@earendil-works/pi-coding-agent/package.json:3` 均为 `0.87.1`；仓库源码与实际安装版本已对齐。
+- `packages/coding-agent/src/main.ts:566–577`：`main` 先重置可选启动计时、合并内建与传入扩展工厂、归一化离线标记；认证命令若被处理则直接返回，不进入常规启动。
+- `packages/coding-agent/src/main.ts:579–588`：非认证路径先做安装清理，再以不信任项目的设置管理器读取全局代理设置，应用环境代理并重新配置 HTTP dispatcher；此时尚未创建会话。
 - 00.3：Web 应用应复用 `pi-agent-core` 与 `pi-ai`，并以自身 UI 替代 CLI 产品层和 TUI；`chord` 按服务组合需求选择。
 - 00.4：Agent 以消息、工具和事件作为 UI 无关的边界，因此替换终端 UI 不需要重写模型 Provider 或工具循环。
 
@@ -84,3 +86,4 @@
 | 当前会话 | 01 | 按反馈重讲 cli-runtime.js 全部三行；核对发现已安装包已升至 0.87.0，而仓库仍为 0.86.1 | 01.1 |
 | 当前会话 | 01 | 用户更新仓库至 0.87.1；学习主线从安装产物切回仓库 cli.ts，安装包 0.87.0 仅作入口旁证 | 01.1：cli.ts → setupCli |
 | 当前会话 | 01 | 完成仓库 setupCli；改为导师直接给出推理结论；版本未一致时必须提醒对齐 | 01.1：main |
+| 当前会话 | 01 | 仓库与安装版本均为 0.87.1；讲解 main.ts:566–588，下一步 package/config 命令分流 | 01.1：main.ts:590–606 |

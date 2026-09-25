@@ -110,4 +110,6 @@
 ### 01.1 推理结论与下一项
 - 主 chunk 的模块顶层初始化先于 `setupCli()` 和 `main(...)`，因为 ESM 会先求值静态依赖，再求值当前模块主体。
 - `setupCli()` 必须先于 `main(...)`：`main` 的认证、包管理、配置解析和后续 Provider 路径都应在 CLI 进程标识、环境变量、warning 策略及初始 HTTP dispatcher 已建立的环境中运行。
-- 下一项：`packages/coding-agent/src/main.ts:main`。
+- 当前仓库与已安装 Pi 的 `package.json:3` 均为 `0.87.1`，版本已对齐。
+- `packages/coding-agent/src/main.ts:566–588`：`main` 的入参来自 `cli.ts`；先处理可选计时、扩展工厂、离线环境标志，再用 `runAuthCommand` 对认证命令早返回。普通启动则进行安装清理，并用 `projectTrusted: false` 的设置管理器读取全局代理配置；`applyHttpProxySettings` 后重新调用 `configureHttpDispatcher`。在此阶段尚未解析常规参数或创建会话。
+- 下一段：`packages/coding-agent/src/main.ts:590–606`，继续看 package/config 命令是否短路。
