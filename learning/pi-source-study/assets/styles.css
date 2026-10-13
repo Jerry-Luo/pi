@@ -1,0 +1,228 @@
+/* Pi 源码课 — 共享样式（teach 工作区首个组件）
+   所有 lessons/ 与 reference/ 文档引用本文件，保持课程视觉一致。
+   设计取向：Tufte 式排版 —— 纸面底色、衬线正文、宽留白、旁注式说明；打印友好。 */
+
+:root {
+	--paper: #faf7f0;
+	--ink: #1f2328;
+	--ink-soft: #57606a;
+	--accent: #8a5a00; /* 琥珀，呼应 pi 主题 */
+	--accent-soft: #f3e3c3;
+	--code-bg: #f4f1ea;
+	--border: #e4ddd0;
+	--ok-bg: #e8f3e4;
+	--ok-ink: #1e5c20;
+	--err-bg: #fbe9e7;
+	--err-ink: #9c2b1f;
+	--serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", Georgia, "Times New Roman", serif;
+	--sans: "PingFang SC", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+	--mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 17px; }
+
+body {
+	margin: 0;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--serif);
+	line-height: 1.75;
+}
+
+main, header.lesson-header, footer {
+	max-width: 46rem;
+	margin: 0 auto;
+	padding: 0 1.25rem;
+}
+
+/* ---------- 头部 ---------- */
+
+header.lesson-header { padding-top: 3.5rem; }
+
+.kicker {
+	font-family: var(--sans);
+	font-size: 0.78rem;
+	letter-spacing: 0.14em;
+	color: var(--accent);
+	text-transform: uppercase;
+	margin-bottom: 0.6rem;
+}
+
+h1 {
+	font-size: 1.9rem;
+	line-height: 1.3;
+	margin: 0 0 0.6rem;
+	font-weight: 700;
+}
+
+.lede { color: var(--ink-soft); font-size: 1.05rem; margin-top: 0; }
+
+.crumbs { font-family: var(--sans); font-size: 0.82rem; margin: 1.2rem 0 0; }
+.crumbs a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+.crumbs a:hover { border-bottom-color: var(--accent); }
+
+hr.rule { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+/* ---------- 正文结构 ---------- */
+
+h2 {
+	font-size: 1.25rem;
+	margin: 2.6rem 0 0.8rem;
+	font-weight: 700;
+}
+h2 .no { color: var(--accent); font-family: var(--sans); font-size: 0.85rem; margin-right: 0.5rem; }
+
+h3 { font-size: 1.05rem; margin: 1.8rem 0 0.5rem; }
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); }
+
+strong { font-weight: 700; }
+
+ul, ol { padding-left: 1.4rem; }
+li { margin: 0.35rem 0; }
+
+/* 旁注（sidenote 风格的块） */
+.note {
+	border-left: 3px solid var(--accent);
+	background: var(--accent-soft);
+	padding: 0.7rem 1rem;
+	font-size: 0.92rem;
+	margin: 1.2rem 0;
+}
+.note .note-tag {
+	font-family: var(--sans);
+	font-size: 0.72rem;
+	letter-spacing: 0.1em;
+	color: var(--accent);
+	display: block;
+	margin-bottom: 0.2rem;
+}
+
+/* ---------- 代码 ---------- */
+
+figure.code { margin: 1.4rem 0; }
+
+figure.code figcaption {
+	font-family: var(--sans);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+	margin-bottom: 0.4rem;
+}
+figure.code figcaption code { color: var(--accent); }
+
+pre {
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.9rem 1rem;
+	overflow-x: auto;
+	font-family: var(--mono);
+	font-size: 0.82rem;
+	line-height: 1.6;
+	margin: 0;
+	tab-size: 4;
+}
+
+pre .ln {
+	display: inline-block;
+	width: 2.6em;
+	color: #b0a692;
+	user-select: none;
+	text-align: right;
+	margin-right: 1.1em;
+}
+
+code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 3px; }
+pre code { background: none; padding: 0; font-size: 1em; }
+
+/* 逐行讲解表 */
+dl.lines { margin: 1rem 0; }
+dl.lines dt {
+	font-family: var(--mono);
+	font-size: 0.85rem;
+	color: var(--accent);
+	margin-top: 0.8rem;
+}
+dl.lines dd { margin: 0.15rem 0 0 0; }
+
+/* ---------- 小测验（assets/quiz.js 驱动） ---------- */
+
+.quiz {
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 1rem 1.2rem;
+	margin: 1.6rem 0;
+	background: #fffdf8;
+}
+.quiz .quiz-q { font-weight: 700; margin: 0 0 0.7rem; }
+.quiz .quiz-tag {
+	font-family: var(--sans);
+	font-size: 0.7rem;
+	letter-spacing: 0.12em;
+	color: var(--ink-soft);
+	display: block;
+	margin-bottom: 0.3rem;
+}
+.quiz .quiz-opts { display: grid; gap: 0.45rem; }
+.quiz button.quiz-opt {
+	font-family: var(--serif);
+	font-size: 0.95rem;
+	text-align: left;
+	padding: 0.5rem 0.8rem;
+	background: var(--paper);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	cursor: pointer;
+	color: var(--ink);
+}
+.quiz button.quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.quiz button.quiz-opt:disabled { cursor: default; opacity: 0.75; }
+.quiz button.quiz-opt.correct { background: var(--ok-bg); border-color: var(--ok-ink); color: var(--ok-ink); opacity: 1; font-weight: 700; }
+.quiz button.quiz-opt.wrong { background: var(--err-bg); border-color: var(--err-ink); color: var(--err-ink); opacity: 1; }
+.quiz .quiz-feedback { display: none; margin-top: 0.7rem; font-size: 0.9rem; }
+.quiz.answered .quiz-feedback { display: block; }
+.quiz .quiz-reset {
+	font-family: var(--sans);
+	font-size: 0.78rem;
+	background: none;
+	border: none;
+	color: var(--accent);
+	cursor: pointer;
+	padding: 0;
+	margin-top: 0.5rem;
+	text-decoration: underline;
+}
+
+/* ---------- 表格（reference 文档用） ---------- */
+
+table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: 0.92rem; }
+th, td { border: 1px solid var(--border); padding: 0.5rem 0.7rem; text-align: left; vertical-align: top; }
+th { font-family: var(--sans); font-size: 0.8rem; background: var(--accent-soft); }
+td code { font-size: 0.85em; }
+
+/* ---------- 页脚 ---------- */
+
+footer {
+	padding-bottom: 4rem;
+	margin-top: 3rem;
+	border-top: 1px solid var(--border);
+	padding-top: 1.2rem;
+	font-family: var(--sans);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+/* ---------- 打印 ---------- */
+
+@media print {
+	html { font-size: 11pt; }
+	body { background: #fff; }
+	header.lesson-header { padding-top: 0.5rem; }
+	.quiz button.quiz-opt { border: 1px solid #999; }
+	a { color: inherit; text-decoration: none; }
+	pre { border: 1px solid #bbb; }
+}

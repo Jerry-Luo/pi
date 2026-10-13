@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0001 · main 的序厅 — Pi 源码课</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="lesson-header">
+	<div class="kicker">Pi 源码课 · Lesson 0001 · 第 01 课 / 检查点 01.2 第 1 段</div>
+	<h1>main 的序厅：一切决策之前的环境收敛</h1>
+	<p class="lede">控制流刚从 <code>cli.ts</code> 的 <code>main(process.argv.slice(2))</code> 进入。在任何"产品决策"（模式分流、会话创建、UI）之前，<code>main</code> 的前 30 行先把进程环境收敛到位。本页只讲这一件事：<code>packages/coding-agent/src/main.ts:569–597</code>（1.1.0）。</p>
+	<nav class="crumbs">
+		<a href="../reference/startup-chain.html">速查 · 启动三层映射</a> ·
+		<a href="../MISSION.md">使命</a> ·
+		<a href="../STUDY_STATE.md">进度</a>
+	</nav>
+</header>
+
+<main>
+
+<h2><span class="no">01</span>场景</h2>
+<p>你在终端敲下 <code>pi</code>（或 <code>pi --print "hi"</code>）。此刻进程已经具备什么？回顾 <a href="../reference/startup-chain.html">启动三层</a>：<code>setupCli()</code> 已设好进程标题、两个环境标记、警告静音和初始 HTTP dispatcher，静态导入的各 chunk 也已完成模块初始化。</p>
+<p>现在进入 <code>main</code>。接下来你会看到五件事依次发生：<strong>计时清零 → 主题校验器注册 → 扩展工厂合并 → 离线归一化 → 认证短路与不信任的自举配置</strong>。它们共同构成所有后续分支的"地板"。</p>
+
+<h2><span class="no">02</span>定向阅读 A —— 签名与四件小事</h2>
+
+<figure class="code">
+<figcaption><code>packages/coding-agent/src/main.ts:569–583</code></figcaption>
+<pre><code><span class="ln">569</span>export interface MainOptions {
+<span class="ln">570</span>	extensionFactories?: InlineExtension[];
+<span class="ln">571</span>}
+<span class="ln">572</span>
+<span class="ln">573</span>export async function main(args: string[], options?: MainOptions) {
+<span class="ln">574</span>	resetTimings();
+<span class="ln">575</span>	// Commands and startup selectors can load user-authored themes before runtime creation.
+<span class="ln">576</span>	setThemeJsonValidator(validateThemeJson);
+<span class="ln">577</span>	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
+<span class="ln">578</span>	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);
+<span class="ln">579</span>	if (offlineMode) {
+<span class="ln">580</span>		process.env.PI_OFFLINE = "1";
+<span class="ln">581</span>		process.env.PI_SKIP_VERSION_CHECK = "1";
+<span class="ln">582</span>	}
+<span class="ln">583</span></code></pre>
+</figure>
+
+<dl class="lines">
+	<dt>569–571 · MainOptions</dt>
+	<dd>整个可选配置只有一个字段：<code>extensionFactories?: InlineExtension[]</code>（类型来自 <code>core/extensions/types.ts</code>）。这是 SDK / 嵌入方的注入口——程序化调用 <code>main</code> 时可以不落盘地携带内联扩展工厂。终端用户永远不传它。</dd>
+	<dt>573 · 签名</dt>
+	<dd><code>args</code> 是 <code>cli.ts</code> 里剥掉 node 与脚本路径后的用户参数；<code>options</code> 只服务于程序化调用者。</dd>
+	<dt>574 · resetTimings()</dt>
+	<dd>来自 <code>core/timings.ts</code>。清零启动计时表；后续会有 <code>time("parseArgs")</code>、<code>time("createSessionManager")</code> 等里程碑陆续记录，用于启动性能观测。</dd>
+	<dt>575–576 · 主题校验器</dt>
+	<dd>源码注释说明动机：命令（package/config）与启动选择器可能在 <strong>runtime 创建之前</strong>加载用户-authored 主题。把 <code>validateThemeJson</code>（<code>modes/interactive/theme/theme-schema.ts</code>）注册进主题系统（<code>theme.ts</code> 的 <code>setThemeJsonValidator</code>），任何代码在任何时刻加载主题 JSON 都会被 schema 校验——不需要等待交互式运行时存在。</dd>
+	<dt>577 · 扩展工厂合并</dt>
+	<dd><code>builtInExtensions</code>（<code>extensions/index.ts</code>）在前、调用方注入在后，合成一个数组。这个数组之后会同时喂给 package/config 命令处理器和真正的会话创建——一处合并，处处使用。</dd>
+	<dt>578–582 · 离线归一化</dt>
+	<dd>离线 = CLI 旗标 <code>--offline</code> <strong>或</strong> 环境变量 <code>PI_OFFLINE</code> 为真值（<code>isTruthyEnvFlag</code>）。一旦离线，就把两个环境变量<strong>写回</strong>进程环境：<code>PI_OFFLINE="1"</code> 与 <code>PI_SKIP_VERSION_CHECK="1"</code>。注意这个模式：CLI 旗标被归一化为环境变量，深处的代码（比如版本检查）只需要读 env，永远不需要接触 <code>Args</code>。</dd>
+</dl>
+
+<h2><span class="no">03</span>定向阅读 B —— 认证短路与不信任的自举</h2>
+
+<figure class="code">
+<figcaption><code>packages/coding-agent/src/main.ts:584–597</code></figcaption>
+<pre><code><span class="ln">584</span>	if (await runAuthCommand(args)) {
+<span class="ln">585</span>		return;
+<span class="ln">586</span>	}
+<span class="ln">587</span>
+<span class="ln">588</span>	if (process.platform === "win32") {
+<span class="ln">589</span>		cleanupWindowsSelfUpdateQuarantine(getPackageDir());
+<span class="ln">590</span>	}
+<span class="ln">591</span>	cleanupManagedInstall();
+<span class="ln">592</span>
+<span class="ln">593</span>	const cwd = process.cwd();
+<span class="ln">594</span>	const agentDir = getAgentDir();
+<span class="ln">595</span>	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
+<span class="ln">596</span>	applyHttpProxySettings(bootstrapSettingsManager.getGlobalSettings().httpProxy);
+<span class="ln">597</span>	configureHttpDispatcher();</code></pre>
+</figure>
+
+<dl class="lines">
+	<dt>584–586 · 认证短路</dt>
+	<dd><code>runAuthCommand(args)</code>（<code>main.ts:133</code>）返回布尔值表达"是否接管了本次命令"：帮助、解析失败（置 <code>exitCode=1</code>）、成功执行认证子命令都返回 <code>true</code>；不是认证命令返回 <code>false</code>。返回 <code>true</code> 时 <code>main</code> 直接 <code>return</code>——不读设置、不建会话、不建 UI。因果：登录必须能在<strong>全新或半损坏</strong>的环境下工作（比如第一次 <code>pi auth login</code> 时全局设置文件还不存在），所以认证排在一切配置读取之前。</dd>
+	<dt>588–590 · Windows 专属清理</dt>
+	<dd>自更新在 Windows 上会因文件锁把旧文件挪进"隔离区"（<code>utils/windows-self-update.ts</code>）；下一次启动时用包目录（<code>config.ts</code> 的 <code>getPackageDir</code>）清理残留。</dd>
+	<dt>591 · cleanupManagedInstall()</dt>
+	<dd>来自 <code>package-manager-cli.ts</code>，<strong>无条件</strong>执行：清理受管安装（pi.dev 安装器体系）的簿记残留。</dd>
+	<dt>593–594 · 两个目录</dt>
+	<dd><code>cwd</code> = 用户所在项目目录；<code>agentDir</code> = <code>getAgentDir()</code>（<code>config.ts</code>）即全局 <code>~/.pi/agent</code>。全局与项目两个维度贯穿后面所有设置逻辑。</dd>
+	<dt>595–597 · 不信任的自举</dt>
+	<dd>这是本段最重要的三行。创建的 <code>SettingsManager</code>（<code>core/settings-manager.ts</code>）带着 <code>projectTrusted: false</code>——<strong>不信任当前项目</strong>。因此第 596 行 <code>getGlobalSettings()</code> 只读<strong>全局</strong>设置里的 <code>httpProxy</code> 并应用（<code>core/http-dispatcher.ts</code> 的 <code>applyHttpProxySettings</code>），随后第 597 行重新执行 <code>configureHttpDispatcher()</code>（与 <code>setupCli</code> 里那次同名，这次带上代理）。因果：项目信任的决策（可能弹窗询问用户）发生在更晚的阶段；在此之前绝不能让刚 clone 的陌生仓库通过项目设置文件指定代理、截获 provider 流量。这是"先全局、后项目"的信任分级。</dd>
+</dl>
+
+<div class="note">
+	<span class="note-tag">边界</span>
+	到这里为止：<strong>没有</strong>创建 Session、Agent 运行时或任何 UI；<strong>没有</strong>解析通用参数（<code>parseArgs</code> 在更后面）；HTTP dispatcher 被配置了两次（<code>setupCli</code> 一次、代理应用后一次），第二次才是带代理生效的那次。
+</div>
+
+<h2><span class="no">04</span>推理：为什么这一段叫"环境收敛"</h2>
+<table>
+	<tr><th>行为</th><th>保护什么</th></tr>
+	<tr><td>计时清零 + 主题校验器注册</td><td>后续任何路径（哪怕一次性命令）都在可观测、可校验的环境中运行</td></tr>
+	<tr><td>扩展工厂合并为一处</td><td>package/config 与会话创建用同一份扩展清单，不会分叉</td></tr>
+	<tr><td>旗标 → 环境变量归一化</td><td>深层代码只读 env，不需要传递 <code>Args</code></td></tr>
+	<tr><td>认证最先短路</td><td>登录不依赖任何可能缺失/损坏的配置</td></tr>
+	<tr><td><code>projectTrusted: false</code> 自举网络</td><td>信任决策完成前，陌生项目无法注入代理</td></tr>
+</table>
+<p>另外埋一个伏笔：本段确立了本课反复出现的<strong>布尔接管约定</strong>——<code>runAuthCommand</code> 返回 <code>true</code> 即"我处理了，main 请返回"。下一段的 <code>handlePackageCommand</code>、<code>handleConfigCommand</code> 沿用同一约定。</p>
+
+<h2><span class="no">05</span>可选小测验</h2>
+<p>完全可选，答错无代价。做不做都不影响继续学习。</p>
+
+<div class="quiz" data-quiz data-explain="认证命令（帮助、解析失败、实际执行）都算“已接管”，main 直接 return——不读设置、不建会话、不建 UI。登录必须能在全新环境下工作，所以排在一切配置之前。">
+	<span class="quiz-tag">练习 1 / 2</span>
+	<p class="quiz-q">runAuthCommand(args) 返回 true 时，main 会？</p>
+	<div class="quiz-opts">
+		<button class="quiz-opt" data-correct="true">立即返回不再继续</button>
+		<button class="quiz-opt">继续解析剩余参数</button>
+		<button class="quiz-opt">创建会话后再返回</button>
+		<button class="quiz-opt">直接输出版本退出</button>
+	</div>
+	<p class="quiz-feedback"></p>
+	<button class="quiz-reset">重做一遍</button>
+</div>
+
+<div class="quiz" data-quiz data-explain="cleanupManagedInstall() 无条件执行；隔离区清理仅限 win32。bootstrapSettingsManager 以 projectTrusted:false 只读全局代理，项目信任解析在更晚阶段，项目设置此刻不可用。">
+	<span class="quiz-tag">练习 2 / 2</span>
+	<p class="quiz-q">认证未被接管时，package/config 之前必然执行的是？</p>
+	<div class="quiz-opts">
+		<button class="quiz-opt">解析通用命令参数</button>
+		<button class="quiz-opt" data-correct="true">清理受管安装残留</button>
+		<button class="quiz-opt">读取项目信任配置</button>
+		<button class="quiz-opt">创建新会话管理器</button>
+	</div>
+	<p class="quiz-feedback"></p>
+	<button class="quiz-reset">重做一遍</button>
+</div>
+
+<h2><span class="no">06</span>下一项</h2>
+<p><code>main.ts:599</code> 起：三段一次性命令分流——<code>handlePackageCommand</code>、<code>handleConfigCommand</code>，以及 <strong>1.1.0 新增的 <code>mcp</code> 子命令</strong>（对应新依赖 <code>pi-mcp</code>），然后是 <code>parseArgs</code> 的诊断门禁。将产出 <code>lessons/0002</code>。</p>
+
+<h2><span class="no">07</span>一手材料</h2>
+<p>本课推荐的原始读物：<a href="../../../packages/coding-agent/docs/how-pi-works.md"><code>packages/coding-agent/docs/how-pi-works.md</code></a>——官方架构自述，是整个课程的主对照文档。</p>
+
+<div class="note">
+	<span class="note-tag">随时提问</span>
+	任何一行不清楚，直接在会话里问你的 agent 老师——比如"为什么 dispatcher 要配置两次"或"projectTrusted 后来什么时候变 true"。
+</div>
+
+</main>
+
+<footer>
+	Pi 源码课 · Lesson 0001 · 版本锚 1.1.0 —— 行号仅对本版本有效（见 <a href="../learning-records/0002-version-drift-anchor-by-symbol.md">LR-0002</a>）。
+</footer>
+
+</body>
+</html>
